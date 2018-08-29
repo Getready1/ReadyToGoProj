@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Data.Entity;
 using Store.Infrastructure.DataAccess;
+using System;
+using System.Linq.Expressions;
 
 namespace Store.DataAccess.Repos
 {
@@ -29,6 +31,27 @@ namespace Store.DataAccess.Repos
 		{
 			dbSet.Remove(entity);
 			await ctx.SaveChangesAsync();
+		}
+
+		public IEnumerable<T> Get(Expression<Func<T, bool>> filter = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, string includeProperties = "")
+		{
+			IQueryable<T> query = dbSet;
+
+			if (filter != null)
+			{
+				query = query.Where(filter);
+			}
+
+			if (!string.IsNullOrWhiteSpace(includeProperties))
+			{
+				foreach (var includeProperty in includeProperties.Split
+				(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+				{
+					query = query.Include(includeProperty);
+				}
+			}
+
+			return orderBy != null ? orderBy(query).ToList() : query.ToList();
 		}
 
 		public T GetById(int id) => dbSet.Find(id);
